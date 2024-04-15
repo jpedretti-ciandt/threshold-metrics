@@ -63,20 +63,31 @@ func (data *AccountData) parseResult(result NrqlResult) {
 		}
 	}
 
-	aggregate := timeslice.(map[string]interface{})
-	count := aggregate["count"].(float64)
-	if count == 0.0 {
-		count = 0
-	}
+	validData := data.isDataValid(timeslice)
 
 	// Make sure there is a Guid
-	if valid && count > 0 {
+	if valid && validData {
 		data.pushMetric(timestamp, timeslice, attributes)
 	}
 	// Advance the timestamp for next query
 	if timestamp > data.Timestamp {
 		data.Timestamp = timestamp
 	}
+}
+
+func (*AccountData) isDataValid(timeslice interface{}) bool {
+	aggregate := timeslice.(map[string]interface{})
+	count := aggregate["count"].(float64)
+	if count == 0.0 {
+		count = 0
+	}
+
+	total := aggregate["total"].(float64)
+	if total == 0.0 {
+		total = 0
+	}
+
+	return count > 0 && total > 0
 }
 
 func (data *AccountData) queryGraphQl() {
